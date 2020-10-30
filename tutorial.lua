@@ -43,7 +43,7 @@ local win = am.window{
 	title = "Reflectus",
 	width = screen_width,
 	height = screen_height,
-	clear_color = bluea
+	clear_color = blue
 }
 
 --assigns a group node and assigns the contents of the group node
@@ -53,6 +53,7 @@ win.scene = am.group() ^
 	am.rect(-screen_width/2,-200,screen_width/2,-500, green),
 
 	am.translate(vec2(0)):tag"player"
+	^ am.rotate(0):tag"player_spin"
 	^ am.circle(vec2(0,0), 50, red,3),
 }
 
@@ -60,11 +61,27 @@ win.scene = am.group() ^
 --NOTE: a scene action is the closest thing you have in amulet to a conventional game loop
 win.scene:action(function(scene)
 
-		player_position = player_position + get_input(10)
+		player_position = player_position + get_input(300) * am.delta_time
 
 		scene"player".position = vec3(player_position, 0)
 
+		if win:key_pressed"space" then
+			scene"player_spin".angle = scene"player_spin".angle + math.rad(90)
+		end
+
 		if win:key_down"escape" then
+			-- this is how you would iterate over a grid
+			-- local grid = {
+  			-- 	{ 11, 12, 13 },
+			-- 	{ 21, 22, 23 },
+			-- 	{ 31, 32, 33 }
+			-- }
+			--
+			-- for y, row in ipairs(grid) do
+  			-- 	for x, value in ipairs(row) do
+    		-- 		print(x, y, grid[y][x])
+  			-- 	end
+			-- end
 			win:close()
 		end
 end)
