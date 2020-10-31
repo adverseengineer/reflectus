@@ -29,6 +29,20 @@
 	--for all it's amazing shorthand and syntax magic, lua lacks assignment operators and increment/decrement. you have to do `a = a + b`
 	--you can't even increment a vector component's value with this: `vec = vec{x = x + 1}` so do without the update syntax on those
 
+--examples
+	-- this is how you would iterate over a grid
+	-- local grid = {
+	-- 	{ 11, 12, 13 },
+	-- 	{ 21, 22, 23 },
+	-- 	{ 31, 32, 33 }
+	-- }
+	--
+	-- for y, row in ipairs(grid) do
+	-- 	for x, value in ipairs(row) do
+	-- 		print(x, y, grid[y][x])
+	-- 	end
+	-- end
+
 local red = vec4(1, 0, 0, 1)
 local blue = vec4(0, 0, 1, 1)
 local green = vec4(0, 1, 0, 1)
@@ -70,18 +84,6 @@ win.scene:action(function(scene)
 		end
 
 		if win:key_down"escape" then
-			-- this is how you would iterate over a grid
-			-- local grid = {
-  			-- 	{ 11, 12, 13 },
-			-- 	{ 21, 22, 23 },
-			-- 	{ 31, 32, 33 }
-			-- }
-			--
-			-- for y, row in ipairs(grid) do
-  			-- 	for x, value in ipairs(row) do
-    		-- 		print(x, y, grid[y][x])
-  			-- 	end
-			-- end
 			win:close()
 		end
 end)
