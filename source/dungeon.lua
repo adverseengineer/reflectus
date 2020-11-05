@@ -9,6 +9,14 @@ local WALL_DOOR = 4
 Dungeon = {}
 Dungeon.__index = Dungeon
 
+--[[
+i feel i ought to include an explanation of my wall lookup scheme because its not very intuitive
+basically, the room data is a conventional grid, meant to be read the way it looks
+the wall data is another beast though. wall data is the same size as room data, but twice as wide and minus one column
+the reason for this is that for every cell in room data, there's 2 passable walls on its bottom and right edges.
+the last room of every row only has one passable wall, hence x*2-1
+]]
+
 --TODO: test
 --creates a new dungeon, ready to be rendered
 function Dungeon:new(map_width, map_height, num_iterations, quad_room_freq, h_double_room_freq, v_double_room_freq)
@@ -27,7 +35,6 @@ function Dungeon:new(map_width, map_height, num_iterations, quad_room_freq, h_do
 			result_dungeon.room_data[y][x] = 0
 		end
 		for x = 1, map_width * 2 - 1, 1 do
-			log(x)
 			result_dungeon.wall_data[y][x] = 0
 		end
 	end
@@ -51,18 +58,19 @@ function Dungeon:generate_rooms(chosen_room, num_iterations, current_iteration)
 	if current_iteration == 1 then
 		return
 	end
+
 	--for each of the adjacent spaces
 	local adjacent_cells = self:get_adjacent_cells(chosen_room)
 	for i = 1, #adjacent_cells do
 		--if the room passes the keep check and the space is not already taken (is zero)
 		--NOTE: the chance to keep the room decreases gradually to zero, inversely proportional to the number of iterations that have passed
-		if math.random() < math.mix(0, 1, current_iteration / num_iterations) and self:get_room(chosen_room) == 0 then
+		if math.random() < math.mix(0, 1, current_iteration / num_iterations) and self:get_room(adjacent_cells[i]) == 0 then
 			--add the room to the map
-			self:set_room(current_iteration - 1, chosen_room)
+			self:set_room(current_iteration - 1, adjacent_cells[i])
 			--add a door connecting the original room and the new room
 			self:set_wall(WALL_DOOR, chosen_room, adjacent_cells[i])
 			--and recurse with the room we just added
-			self:generate_rooms(chosen_room, num_iterations, current_iteration - 1)
+			self:generate_rooms(adjacent_cells[i], num_iterations, current_iteration - 1)
 		end
 	end
 end
@@ -213,13 +221,11 @@ function Dungeon:get_room(room_position)
 	return self.room_data[room_position.y][room_position.x]
 end
 
---TODO: test
 --returns the wall value at the provided wall coords
 function Dungeon:get_wall(wall_position)
 	return self.wall_data[wall_position.y][wall_position.x];
 end
 
---TODO: test
 --returns the wall value between the provided room coords
 function Dungeon:get_wall_from_rooms(room_1_position, room_2_position)
 	return self:get_wall(self:get_wall_position(room_1_position, room_2_position))
@@ -235,7 +241,6 @@ function Dungeon:set_wall(value, wall_position)
 	self.wall_data[wall_position.y][wall_position.x] = value
 end
 
---TODO: test
 --sets the wall value between the specified rooms coords
 function Dungeon:set_wall_from_rooms(value, room_1_position, room_2_position)
 	self:set_wall(value, self:get_wall_position(room_1_position, room_2_position))
@@ -243,18 +248,29 @@ end
 
 --takes a vec2 as room coordinates and returns a list of the coords of all adjacent cells
 function Dungeon:get_adjacent_cells(room_position)
-	return
-	{
-		vec2(room_position.x, room_position.y - 1),
-		vec2(room_position.x + 1, room_position.y),
-		vec2(room_position.x, room_position.y + 1),
-		vec2(room_position.x - 1, room_position.y)
-	}
+	local adjacent_cells = {}
+
+	if room_position.x > 0 and room_position.x <= self:get_width() and room_position.y - 1 > 0 and room_position.y - 1 < self:get_height() then
+		table.insert(adjacent_cells, vec2(room_position.x, room_position.y - 1))
+	end
+	if room_position.x + 1 > 0 and room_position.x + 1 <= self:get_width() and room_position.y > 0 and room_position.y < self:get_height() then
+		table.insert(adjacent_cells, vec2(room_position.x + 1, room_position.y))
+	end
+	if room_position.x > 0 and room_position.x <= self:get_width() and room_position.y + 1 > 0 and room_position.y + 1 < self:get_height() then
+		table.insert(adjacent_cells, vec2(room_position.x, room_position.y + 1))
+	end
+	if room_position.x - 1 > 0 and room_position.x - 1 <= self:get_width() and room_position.y > 0 and room_position.y < self:get_height() then
+		table.insert(adjacent_cells, vec2(room_position.x - 1, room_position.y))
+	end
+
+	return adjacent_cells
 end
 
---TODO: test
 --returns the coords of the wall that lies between the provided room coords
 function Dungeon:get_wall_position(room_1_position, room_2_position)
+	if room_1_position == room_2_position or math.distance(room_1_position, room_2_position) ~= 1 then
+		error("given rooms are identical or non-adjacent")
+	end
 	--if the rooms are vertically adjacent (x1 == x2)
 	--the y coord of the wall will always be the smaller of the two rooms' y coords
 	if room_1_position.x == room_2_position.x then
@@ -266,11 +282,10 @@ function Dungeon:get_wall_position(room_1_position, room_2_position)
 	end
 end
 
---TODO: test
 --takes the coordinates of a wall and returns the coords of the rooms it lies between
 function Dungeon:get_room_positions(wall_position)
 	--if the wall connects vertically
-	if wall_position.x >= self:get_height() - 1 then
+	if wall_position.x > self:get_width() - 1 then
 		return
 			vec2(wall_position.x - self:get_width() + 1, wall_position.y),
 			vec2(wall_position.x - self:get_width() + 1, wall_position.y + 1)
@@ -296,7 +311,11 @@ end
 function Dungeon:print_room_data()
 	for y = 1, #self.room_data do
 		for x = 1, #self.room_data[y] do
-			io.write(self:get_room(vec2(x, y)).." ")
+			if self:get_room(vec2(x, y)) > 0 then
+				io.write(self:get_room(vec2(x, y)).." ")
+			else
+				io.write("  ")
+			end
 		end
 		print("")
 	end
@@ -306,8 +325,34 @@ end
 function Dungeon:print_wall_data()
 	for y = 1, #self.wall_data do
 		for x = 1, #self.wall_data[y] do
-			io.write(self:get_wall(vec2(x, y)).." ")
+			if self:get_wall(vec2(x, y)) > 0 then
+				io.write(self:get_wall(vec2(x, y)).." ")
+			else
+				io.write("  ")
+			end
 		end
 		print("")
 	end
+end
+
+--returns a node for a top-down view of the dungeon
+function Dungeon:paint(scale_factor, room_width, room_height)
+	--declare a node to store the view
+	local dungeon_root = am.translate(0, 0)
+
+	--for every cell in the dungeon
+	for y = 1, #self.room_data do
+		for x = 1, #self.room_data[y] do
+			--if a room exists here
+			if self:get_room(vec2(x, y)) > 0 then
+				dungeon_root:append(
+					am.scale(scale_factor)
+					^ am.translate(x,y)
+					^ am.rect(0, 0, room_width, room_height)
+				)
+			end
+		end
+	end
+
+	return dungeon_root
 end
