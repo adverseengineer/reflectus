@@ -9,7 +9,7 @@ math.randomseed(os.time())
 require "dungeon"
 local color = require "color"
 
-dun = Dungeon:new(20, 20, 7, 0, 0, 0)
+dun = Dungeon:new(20, 20, 7, 0.1, 0.1, 0.1)
 win = am.window{
 	title = "Refucktus",
 	resizable = true,
@@ -23,7 +23,7 @@ win.scene = am.group() ^ {
 	am.line(vec2(0, win.top), vec2(0, win.bottom), 1, color.yellow),
 	am.line(vec2(win.left, 0), vec2(win.right, 0), 1, color.yellow),
 
-	dun:top_down(tonumber(arg[1]), 3, 3, 1, 1)
+	dun:top_down(tonumber(arg[1]), 4, 4, 1, 1)
 }
 
 --window exit action

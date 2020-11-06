@@ -70,7 +70,7 @@ function Dungeon:generate_rooms(chosen_room, num_iterations, current_iteration)
 			--add the room to the map
 			self:set_room(current_iteration - 1, adjacent_cells[i])
 			--add a door connecting the original room and the new room
-			self:set_wall_from_room(WALL_DOOR, chosen_room, adjacent_cells[i])
+			self:set_wall_from_rooms(WALL_DOOR, chosen_room, adjacent_cells[i])
 			--and recurse with the room we just added
 			self:generate_rooms(adjacent_cells[i], num_iterations, current_iteration - 1)
 		end
@@ -374,7 +374,8 @@ function Dungeon:top_down(scale_factor, room_width, room_height, h_spacing, v_sp
 						(x - 1) * (room_width + h_spacing),
 						(y - 1) * (room_height + v_spacing),
 						(x - 1) * (room_width + h_spacing) + room_width,
-						(y - 1) * (room_height + v_spacing) + room_height
+						(y - 1) * (room_height + v_spacing) + room_height,
+						color.yellow
 					)
 					--NOTE: the big scary block of coordinates above is unnecessary here, it just saves memory
 					--if i wanted to make it cleaner, i could say this
@@ -385,25 +386,38 @@ function Dungeon:top_down(scale_factor, room_width, room_height, h_spacing, v_sp
 		end
 	end
 
-	--for every wall in the dungeon
-	--NOTE: make sure to use the dimensions of the wall data array, not get_width or get_height
-	for y = 1, #self.wall_data do
-		for x = 1, #self.wall_data[y] do
-			--if there is a door in this spot
-			if self:get_room(vec2(x, y)) == WALL_DOOR then
-				local room1, room2 = self:get_room_positions(vec2(x, y))
+	--do a separate loop so that the doors render on top of the rooms
+	for y = 1, self:get_height() do
+		for x = 1, self:get_width() do
+			--if there is a door connecting the right side of this room
+			if self:get_wall_from_rooms(vec2(x, y), vec2(x + 1, y)) == WALL_DOOR then
 				dungeon_view:append(
 					am.line(
 						vec2(
-							(room1.x - 1) * (room_width + h_spacing) + room_width / 2,
-							(room1.y - 1) * (room_height + v_spacing) + room_height / 2
+							(x - 1) * (room_width + h_spacing) + room_width / 2,
+							(y - 1) * (room_height + v_spacing) + room_height / 2
 						),
 						vec2(
-							(room2.x - 1) * (room_width + h_spacing) + room_width / 2,
-							(room2.y - 1) * (room_height + v_spacing) + room_height / 2
+							x * (room_width + h_spacing) + room_width / 2,
+							(y - 1) * (room_height + v_spacing) + room_height / 2
 						),
-						1,
-						color.magenta
+						1, color.cyan
+					)
+				)
+			end
+			--if there is a door connecting the bottom edge of this room
+			if self:get_wall_from_rooms(vec2(x, y), vec2(x, y + 1)) == WALL_DOOR then
+				dungeon_view:append(
+					am.line(
+						vec2(
+							(x - 1) * (room_width + h_spacing) + room_width / 2,
+							(y - 1) * (room_height + v_spacing) + room_height / 2
+						),
+						vec2(
+							(x - 1) * (room_width + h_spacing) + room_width / 2,
+							y * (room_height + v_spacing) + room_height / 2
+						),
+						1, color.magenta
 					)
 				)
 			end
