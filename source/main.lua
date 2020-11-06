@@ -9,7 +9,7 @@ math.randomseed(os.time())
 require "dungeon"
 local color = require "color"
 
-dun = Dungeon:new(20, 20, 7, 0.1, 0.1, 0.1)
+dun = Dungeon:new(20, 20, 9, 0.2, 0.2, 0.2)
 win = am.window{
 	title = "Refucktus",
 	resizable = true,

@@ -46,9 +46,9 @@ function Dungeon:new(map_width, map_height, num_iterations, quad_room_freq, h_do
 	result_dungeon:generate_rooms(vec2(math.ceil(map_width / 2), math.ceil(map_height / 2)), num_iterations, num_iterations)
 
 	--spice up the dungeon
-	--result_dungeon:make_quad_rooms(quad_room_freq)
-	--result_dungeon:make_h_double_rooms(h_double_room_freq)
-	--result_dungeon:make_v_double_rooms(v_double_room_freq)
+	result_dungeon:make_quad_rooms(quad_room_freq)
+	result_dungeon:make_h_double_rooms(h_double_room_freq)
+	result_dungeon:make_v_double_rooms(v_double_room_freq)
 
 	return result_dungeon
 end
@@ -82,8 +82,8 @@ end
 --every pair is given a roughly <frequency>% chance to become joined into a larger room
 function Dungeon:make_quad_rooms(frequency)
 	--for every cell in the map
-	for y = 1, #self.room_data do
-		for x = 1, #self.room_data[y] do
+	for y = 1, self:get_height() do
+		for x = 1, self:get_width() do
 			--if a 2x2 group exists here
 			if self:get_room(vec2(x, y)) > 0
 			and self:get_room(vec2(x + 1, y)) > 0
@@ -140,8 +140,8 @@ end
 --every pair is given a roughly <frequency>% chance to become joined into a larger room
 function Dungeon:make_h_double_rooms(frequency)
 	--for every cell in the map
-	for y = 1, #self.room_data do
-		for x = 1, #self.room_data[y] do
+	for y = 1, self:get_height() do
+		for x = 1, self:get_width() do
 			--if a 2x1 group exists here, connected by a door
 			if self:get_room(vec2(x, y)) > 0
 			and self:get_room(vec2(x + 1, y)) > 0
@@ -182,8 +182,8 @@ end
 --every pair is given a roughly <frequency>% chance to become joined into a larger room
 function Dungeon:make_v_double_rooms(frequency)
 	--for every cell in the map
-	for y = 1, #self.room_data do
-		for x = 1, #self.room_data[y] do
+	for y = 1, self:get_height() do
+		for x = 1, self:get_width() do
 			--if a 1x2 group exists here, connected by a door
 			if self:get_room(vec2(x, y)) > 0
 			and self:get_room(vec2(x, y + 1)) > 0
@@ -209,7 +209,7 @@ function Dungeon:make_v_double_rooms(frequency)
 				and self:get_wall_from_rooms(vec2(x, y + 1), vec2(x + 1, y + 1)) ~= WALL_JOINED_H then
 					--if the rng passes the check
 					if(math.random() < frequency) then
-						self:set_wall_from_rooms(WALL_JOINED_VERTICAL, vec2(x, y), vec2(x, y + 1))
+						self:set_wall_from_rooms(WALL_JOINED_V, vec2(x, y), vec2(x, y + 1))
 						log("vpair @"..vec2(x, y))
 					end
 				end
@@ -282,8 +282,8 @@ end
 
 --returns the coords of the wall that lies between the provided room coords
 function Dungeon:get_wall_position(room_1_position, room_2_position)
-	assert(room_1_position ~= room_2_position, "given rooms are identical")
-	assert(math.distance(room_1_position, room_2_position) == 1, "given rooms are non-adjacent")
+	assert(room_1_position ~= room_2_position, "given rooms ("..room_1_position..") are identical")
+	assert(math.distance(room_1_position, room_2_position) == 1, room_1_position.." and "..room_2_position.." are non-adjacent")
 
 	--if the rooms are vertically adjacent (x1 == x2)
 	--the y coord of the wall will always be the smaller of the two rooms' y coords
@@ -356,12 +356,15 @@ end
 function Dungeon:top_down(scale_factor, room_width, room_height, h_spacing, v_spacing)
 
 	--declare a node to store the view
-	local dungeon_view = am.scale(scale_factor)-- ^ am.translate(10, 10)
+	local dungeon_view = am.translate(
+		-self:get_width() * (room_width + h_spacing) / 2,
+		-self:get_height() * (room_height + v_spacing) / 2
+	)
 
 	--NOTE: any time x or y is used within these loops, you must subtract 1 to correct for lua's 1-based arrays
 	--theyre a nice idea on paper but they suck when you start counting at zero from habit
 
-	--for every room in the dungeon
+	--single room loop
 	for y = 1, self:get_height() do
 		for x = 1, self:get_width() do
 			--if there is a room here
@@ -375,7 +378,7 @@ function Dungeon:top_down(scale_factor, room_width, room_height, h_spacing, v_sp
 						(y - 1) * (room_height + v_spacing),
 						(x - 1) * (room_width + h_spacing) + room_width,
 						(y - 1) * (room_height + v_spacing) + room_height,
-						color.yellow
+						color.red
 					)
 					--NOTE: the big scary block of coordinates above is unnecessary here, it just saves memory
 					--if i wanted to make it cleaner, i could say this
@@ -386,7 +389,68 @@ function Dungeon:top_down(scale_factor, room_width, room_height, h_spacing, v_sp
 		end
 	end
 
-	--do a separate loop so that the doors render on top of the rooms
+	--quad room loop
+	for y = 1, self:get_height() do
+		for x = 1, self:get_width() do
+			if self:get_room(vec2(x, y)) > 0 then
+				if self:get_wall_from_rooms(vec2(x, y), vec2(x + 1, y)) == WALL_JOINED_Q
+				and self:get_wall_from_rooms(vec2(x + 1, y), vec2(x + 1, y + 1)) == WALL_JOINED_Q
+				and self:get_wall_from_rooms(vec2(x + 1, y + 1), vec2(x, y + 1)) == WALL_JOINED_Q
+				and self:get_wall_from_rooms(vec2(x, y + 1), vec2(x, y)) == WALL_JOINED_Q then
+					dungeon_view:append(
+						am.rect(
+							(x - 1) * (room_width + h_spacing),
+							(y - 1) * (room_height + v_spacing),
+							x * (room_width + h_spacing) + room_width,
+							y * (room_height + v_spacing) + room_height,
+							color.orange
+						)
+					)
+
+				end
+			end
+		end
+	end
+
+	--h double room loop
+	for y = 1, self:get_height() do
+		for x = 1, self:get_width() do
+			if self:get_room(vec2(x, y)) > 0 then
+				if self:get_wall_from_rooms(vec2(x, y), vec2(x + 1, y)) == WALL_JOINED_H then
+					dungeon_view:append(
+						am.rect(
+							(x - 1) * (room_width + h_spacing),
+							(y - 1) * (room_height + v_spacing),
+							x * (room_width + h_spacing) + room_width,
+							(y - 1) * (room_height + v_spacing) + room_height,
+							color.yellow
+						)
+					)
+				end
+			end
+		end
+	end
+
+	--v double room loop
+	for y = 1, self:get_height() do
+		for x = 1, self:get_width() do
+			if self:get_room(vec2(x, y)) > 0 then
+				if self:get_wall_from_rooms(vec2(x, y), vec2(x, y + 1)) == WALL_JOINED_V then
+					dungeon_view:append(
+						am.rect(
+							(x - 1) * (room_width + h_spacing),
+							(y - 1) * (room_height + v_spacing),
+							(x - 1) * (room_width + h_spacing) + room_width,
+							y * (room_height + v_spacing) + room_height,
+							color.purple
+						)
+					)
+				end
+			end
+		end
+	end
+
+	--door loop
 	for y = 1, self:get_height() do
 		for x = 1, self:get_width() do
 			--if there is a door connecting the right side of this room
@@ -401,7 +465,7 @@ function Dungeon:top_down(scale_factor, room_width, room_height, h_spacing, v_sp
 							x * (room_width + h_spacing) + room_width / 2,
 							(y - 1) * (room_height + v_spacing) + room_height / 2
 						),
-						1, color.cyan
+						1, color.green
 					)
 				)
 			end
@@ -417,12 +481,12 @@ function Dungeon:top_down(scale_factor, room_width, room_height, h_spacing, v_sp
 							(x - 1) * (room_width + h_spacing) + room_width / 2,
 							y * (room_height + v_spacing) + room_height / 2
 						),
-						1, color.magenta
+						1, color.blue
 					)
 				)
 			end
 		end
 	end
 
-	return dungeon_view
+	return am.scale(scale_factor) ^ dungeon_view
 end
