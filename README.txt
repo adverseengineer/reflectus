@@ -1,6 +1,7 @@
 
 
-==================================================================================================================================================================================
+
+====================================================================================================================
 Resizing the game windows
 This game is played using two windows. For the best experience, you should resize each window to fill half your screen.
 This is done in a few ways, depending on your operating system.
@@ -12,7 +13,8 @@ OS X
 Linux
 	This may vary depending on what desktop you are using, but for most of them it is done the same as Windows
 	If your keyboard doesn't have a Windows key, use whatever key your system designates as the "super key"
-==================================================================================================================================================================================
+
+====================================================================================================================
 Attribution
 wall.png is an edited version of https://opengameart.org/content/brick-texture
 floor.png is an edited version of https://opengameart.org/content/pebblesstound-floor-texture
