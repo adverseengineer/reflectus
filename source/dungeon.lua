@@ -5,9 +5,9 @@ local WALL_JOINED_V = 2
 local WALL_JOINED_Q = 3
 local WALL_DOOR = 4
 
-local color = require "color"
+require "colors"
 
---if you are trying to understand these lines, just know it's something stupid and meta
+--just meta stuff that lua needs to emulate OOP
 Dungeon = {}
 Dungeon.__index = Dungeon
 
@@ -126,7 +126,6 @@ function Dungeon:make_quad_rooms(frequency)
 							self:set_wall_from_rooms(WALL_JOINED_Q, vec2(x + 1, y), vec2(x + 1, y + 1))
 							self:set_wall_from_rooms(WALL_JOINED_Q, vec2(x + 1, y + 1), vec2(x, y + 1))
 							self:set_wall_from_rooms(WALL_JOINED_Q, vec2(x, y + 1), vec2(x, y))
-							log("quad @"..vec2(x, y))
 						end
 					end
 				end
@@ -169,7 +168,6 @@ function Dungeon:make_h_double_rooms(frequency)
 					if(math.random() < frequency) then
 						--set the walls between the group to be horizontally joined
 						self:set_wall(WALL_JOINED_H, vec2(x, y), vec2(x + 1, y))
-						log("hpair @"..vec2(x, y))
 					end
 				end
 			end
@@ -209,8 +207,8 @@ function Dungeon:make_v_double_rooms(frequency)
 				and self:get_wall_from_rooms(vec2(x, y + 1), vec2(x + 1, y + 1)) ~= WALL_JOINED_H then
 					--if the rng passes the check
 					if(math.random() < frequency) then
+						--set the wall between the group to be vertically joined
 						self:set_wall_from_rooms(WALL_JOINED_V, vec2(x, y), vec2(x, y + 1))
-						log("vpair @"..vec2(x, y))
 					end
 				end
 			end
@@ -350,7 +348,6 @@ function Dungeon:print_wall_data()
 	end
 end
 
---TODO: as far as i can tell, everything else works now, so all that's left is to get this to render doors correctly
 --NOTE: this function does not need to be efficient. it is only for verifying everything else works
 --returns a node for a top-down view of the dungeon
 function Dungeon:top_down(scale_factor, room_width, room_height, h_spacing, v_spacing)
@@ -378,7 +375,7 @@ function Dungeon:top_down(scale_factor, room_width, room_height, h_spacing, v_sp
 						(y - 1) * (room_height + v_spacing),
 						(x - 1) * (room_width + h_spacing) + room_width,
 						(y - 1) * (room_height + v_spacing) + room_height,
-						color.red
+						colors.red
 					)
 					--NOTE: the big scary block of coordinates above is unnecessary here, it just saves memory
 					--if i wanted to make it cleaner, i could say this
@@ -403,10 +400,9 @@ function Dungeon:top_down(scale_factor, room_width, room_height, h_spacing, v_sp
 							(y - 1) * (room_height + v_spacing),
 							x * (room_width + h_spacing) + room_width,
 							y * (room_height + v_spacing) + room_height,
-							color.orange
+							colors.orange
 						)
 					)
-
 				end
 			end
 		end
@@ -423,7 +419,7 @@ function Dungeon:top_down(scale_factor, room_width, room_height, h_spacing, v_sp
 							(y - 1) * (room_height + v_spacing),
 							x * (room_width + h_spacing) + room_width,
 							(y - 1) * (room_height + v_spacing) + room_height,
-							color.yellow
+							colors.yellow
 						)
 					)
 				end
@@ -442,7 +438,7 @@ function Dungeon:top_down(scale_factor, room_width, room_height, h_spacing, v_sp
 							(y - 1) * (room_height + v_spacing),
 							(x - 1) * (room_width + h_spacing) + room_width,
 							y * (room_height + v_spacing) + room_height,
-							color.purple
+							colors.purple
 						)
 					)
 				end
@@ -465,7 +461,7 @@ function Dungeon:top_down(scale_factor, room_width, room_height, h_spacing, v_sp
 							x * (room_width + h_spacing) + room_width / 2,
 							(y - 1) * (room_height + v_spacing) + room_height / 2
 						),
-						1, color.green
+						1, colors.green
 					)
 				)
 			end
@@ -481,7 +477,7 @@ function Dungeon:top_down(scale_factor, room_width, room_height, h_spacing, v_sp
 							(x - 1) * (room_width + h_spacing) + room_width / 2,
 							y * (room_height + v_spacing) + room_height / 2
 						),
-						1, color.blue
+						1, colors.blue
 					)
 				)
 			end

@@ -1,5 +1,4 @@
 -- local win1, win2 = require "windows"
--- os.execute("sleep " .. tonumber(0.25))
 
 assert(#arg == 1, "Too few or too many args")
 
@@ -7,28 +6,28 @@ assert(#arg == 1, "Too few or too many args")
 math.randomseed(os.time())
 
 require "dungeon"
-local color = require "color"
+require "colors"
 
-dun = Dungeon:new(20, 20, 9, 0.2, 0.2, 0.2)
 win = am.window{
-	title = "Refucktus",
+	title = "Reflectus",
 	resizable = true,
-	-- width = screen_width,
-	-- height = screen_height,
-	clear_color = color.black
+	width = 720,
+	height = 720,
+	clear_color = colors.black
 }
 
-win.scene = am.group() ^ {
-
-	am.line(vec2(0, win.top), vec2(0, win.bottom), 1, color.yellow),
-	am.line(vec2(win.left, 0), vec2(win.right, 0), 1, color.yellow),
-
-	dun:top_down(tonumber(arg[1]), 4, 4, 1, 1)
-}
+win.scene = am.group()
 
 --window exit action
 win.scene:action(function(scene)
 	if win:key_down"escape" then
 		win:close()
+	end
+
+	--if any key is pressed
+	if #win:keys_pressed() > 0 then
+		local dun = Dungeon:new(20, 20, 9, 0.2, 0.2, 0.2):top_down(tonumber(arg[1]), 4, 4, 1, 1)
+		scene:remove_all()
+		scene:append(dun)
 	end
 end)
