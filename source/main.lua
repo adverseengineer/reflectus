@@ -26,8 +26,8 @@ win.scene:action(function(scene)
 
 	--if any key is pressed
 	if #win:keys_pressed() > 0 then
-		local dun = Dungeon:new(20, 20, 9, 0.2, 0.2, 0.2):top_down(tonumber(arg[1]), 4, 4, 1, 1)
+		local dun = Dungeon:new(20, 20, 15, 1, 1, 1):top_down(tonumber(arg[1]), 4, 4, 1, 1)
 		scene:remove_all()
-		scene:append(dun)
+		scene:append(am.rotate(math.rad(45)) ^ dun)
 	end
 end)

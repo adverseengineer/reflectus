@@ -14,6 +14,7 @@ Linux
 	If your keyboard doesn't have a Windows key, use whatever key your system designates as the "super key"
 ==================================================================================================================================================================================
 Attribution
-wall.png is an edited version of https://opengameart.org/content/brick-texture
-floor.png is an edited version of https://opengameart.org/content/pebblesstound-floor-texture
+wall.png is by Bart K at https://opengameart.org/content/brick-texture
+floor.png is by SindWiller at https://opengameart.org/content/pebblesstound-floor-texture
+ambiance.ogg is by Philippe Groarke at https://opengameart.org/content/dark-ambiance
 All other assets are homemade

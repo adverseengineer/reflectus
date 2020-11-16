@@ -9,4 +9,5 @@ void main() {
     vec3 nm = normalize((MV * vec4(normal, 0.0)).xyz);
     v_color = vec3(max(0.1, dot(light, nm)));
     gl_Position = P * MV * vec4(pos, 1.0);
+	gl_PointSize = 3.0;
 }

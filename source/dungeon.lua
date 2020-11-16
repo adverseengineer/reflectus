@@ -19,7 +19,6 @@ the reason for this is that for every cell in room data, there's 2 passable wall
 the last room of every row only has one passable wall, hence the minus one
 ]]
 
---TODO: test
 --creates a new dungeon, ready to be rendered
 function Dungeon:new(map_width, map_height, num_iterations, quad_room_freq, h_double_room_freq, v_double_room_freq)
 	--more meta garbage. constructors have to explicity return the new table
@@ -53,7 +52,6 @@ function Dungeon:new(map_width, map_height, num_iterations, quad_room_freq, h_do
 	return result_dungeon
 end
 
---TODO: test
 --populates the dungeon by recursively branching off from the provided room
 function Dungeon:generate_rooms(chosen_room, num_iterations, current_iteration)
 	--base case: if we are on the last iteration, stop
@@ -77,7 +75,6 @@ function Dungeon:generate_rooms(chosen_room, num_iterations, current_iteration)
 	end
 end
 
---TODO: test
 --loops over the entire map and finds 2x2 groups of rooms
 --every pair is given a roughly <frequency>% chance to become joined into a larger room
 function Dungeon:make_quad_rooms(frequency)
@@ -134,7 +131,6 @@ function Dungeon:make_quad_rooms(frequency)
 	end
 end
 
---TODO: test
 --loops over the entire map and finds 2x1 groups of rooms
 --every pair is given a roughly <frequency>% chance to become joined into a larger room
 function Dungeon:make_h_double_rooms(frequency)
@@ -175,7 +171,6 @@ function Dungeon:make_h_double_rooms(frequency)
 	end
 end
 
---TODO: test
 --loops over the entire map and finds 1x2 groups of rooms
 --every pair is given a roughly <frequency>% chance to become joined into a larger room
 function Dungeon:make_v_double_rooms(frequency)
@@ -218,12 +213,22 @@ end
 
 --returns the room value at the provided room coords
 function Dungeon:get_room(room_position)
-	return self.room_data[room_position.y][room_position.x]
+	if (room_position.x > 0 and room_position.y > 0)
+	and (room_position.x <= self:get_width() and room_position.y <= self:get_height()) then
+		return self.room_data[room_position.y][room_position.x]
+	else
+		return -1
+	end
 end
 
 --returns the wall value at the provided wall coords
 function Dungeon:get_wall(wall_position)
-	return self.wall_data[wall_position.y][wall_position.x];
+	if (wall_position.x > 0 and wall_position.y > 0)
+	and (wall_position.x <= #self.wall_data[1] and wall_position.y <= #self.wall_data) then
+		return self.wall_data[wall_position.y][wall_position.x];
+	else
+		return -1
+	end
 end
 
 --returns the wall value between the provided room coords
@@ -294,7 +299,6 @@ function Dungeon:get_wall_position(room_1_position, room_2_position)
 	end
 end
 
---NOTE: thought out, needs testing
 --takes the coordinates of a wall and returns the coords of the rooms it lies between
 function Dungeon:get_room_positions(wall_position)
 	--if the wall connects vertically
@@ -485,4 +489,46 @@ function Dungeon:top_down(scale_factor, room_width, room_height, h_spacing, v_sp
 	end
 
 	return am.scale(scale_factor) ^ dungeon_view
+end
+
+--returns an ascii table representing the dungeon's layout
+function Dungeon:get_data(room_width, room_height)
+	local data = {}
+
+	--preset the table to "______"
+	for y = 1, self:get_height() do
+		data[y] = {}
+		for x = 1, self:get_width() do
+			data[y][x] = "______"
+		end
+	end
+
+	--for every cell in room data
+	for y = 1, self:get_height() do
+		for x = 1, self:get_width() do
+			--if there is a room here
+			if self:get_data(vec2(x, y)) then
+				--mark a square region of the return data as "room"
+				--these start at 0 and subtract 1 from the max because they act like offsets, not indexes
+				for region_y = 0, room_height - 1 do
+					for region_x = 0, room_width - 1 do
+						--set each member of the region to be "room_#" where # is the value of the room
+						--data[?][?] = "room"..self:get_data(vec2(x,y))
+						
+						data[region_y + y * (room_height + 1)][region_x + x * (room_width + 1)] = "room_"..self:get_data(vec2(x, y))
+
+						--region_y + y * (room_height + 1)
+						--NOTE: logic behind this math:
+						--the y index for where to assign a cell in a group to is
+						--the relative y offset (region_y)
+						--plus
+						--the global y index (the index of the actual room in room_data) (it acts as a multiplier to the room size) "how many room sizes do you need to go before you can put another without it overlapping"
+						--times (room_height + 1): the plus one is because it is easier to count the doors on the right and bottom of a room as part of the room's perimeter. 
+					end
+				end
+			end
+		end
+	end
+
+	return data
 end
