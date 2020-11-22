@@ -90,7 +90,7 @@ function Dungeon:make_quad_rooms(frequency)
 					if self:get_wall_from_rooms(x, y, x, y - 1) ~= WALL_JOINED_Q
 					and self:get_wall_from_rooms(x, y, x, y - 1) ~= WALL_JOINED_H
 					and self:get_wall_from_rooms(x, y, x, y - 1) ~= WALL_JOINED_V
-					and	self:get_wall_from_rooms(x + 1, y, x + 1, y - 1) ~= WALL_JOINED_Q
+					and self:get_wall_from_rooms(x + 1, y, x + 1, y - 1) ~= WALL_JOINED_Q
 					and self:get_wall_from_rooms(x + 1, y, x + 1, y - 1) ~= WALL_JOINED_H
 					and self:get_wall_from_rooms(x + 1, y, x + 1, y - 1) ~= WALL_JOINED_V
 					and self:get_wall_from_rooms(x + 1, y, x + 2, y) ~= WALL_JOINED_Q
@@ -99,16 +99,16 @@ function Dungeon:make_quad_rooms(frequency)
 					and self:get_wall_from_rooms(x + 1, y + 1, x + 2, y + 1) ~= WALL_JOINED_Q
 					and self:get_wall_from_rooms(x + 1, y + 1, x + 2, y + 1) ~= WALL_JOINED_H
 					and self:get_wall_from_rooms(x + 1, y + 1, x + 2, y + 1) ~= WALL_JOINED_V
-					and	self:get_wall_from_rooms(x + 1, y + 1, x + 1, y + 2) ~= WALL_JOINED_Q
+					and self:get_wall_from_rooms(x + 1, y + 1, x + 1, y + 2) ~= WALL_JOINED_Q
 					and self:get_wall_from_rooms(x + 1, y + 1, x + 1, y + 2) ~= WALL_JOINED_H
 					and self:get_wall_from_rooms(x + 1, y + 1, x + 1, y + 2) ~= WALL_JOINED_V
 					and self:get_wall_from_rooms(x, y + 1, x, y + 2) ~= WALL_JOINED_Q
 					and self:get_wall_from_rooms(x, y + 1, x, y + 2) ~= WALL_JOINED_H
 					and self:get_wall_from_rooms(x, y + 1, x, y + 2) ~= WALL_JOINED_V
-					and	self:get_wall_from_rooms(x, y + 1, x - 1, y + 1) ~= WALL_JOINED_Q
+					and self:get_wall_from_rooms(x, y + 1, x - 1, y + 1) ~= WALL_JOINED_Q
 					and self:get_wall_from_rooms(x, y + 1, x - 1, y + 1) ~= WALL_JOINED_H
 					and self:get_wall_from_rooms(x, y + 1, x - 1, y + 1) ~= WALL_JOINED_V
-					and	self:get_wall_from_rooms(x, y, x - 1, y) ~= WALL_JOINED_Q
+					and self:get_wall_from_rooms(x, y, x - 1, y) ~= WALL_JOINED_Q
 					and self:get_wall_from_rooms(x, y, x - 1, y) ~= WALL_JOINED_H
 					and self:get_wall_from_rooms(x, y, x - 1, y) ~= WALL_JOINED_V then
 						--if the rng passes the check
@@ -183,7 +183,7 @@ function Dungeon:make_v_double_rooms(frequency)
 				and self:get_wall_from_rooms(x, y + 1, x, y + 2) ~= WALL_JOINED_Q
 				and self:get_wall_from_rooms(x, y + 1, x, y + 2) ~= WALL_JOINED_H
 				and self:get_wall_from_rooms(x, y + 1, x, y + 2) ~= WALL_JOINED_V
-				and	self:get_wall_from_rooms(x, y, x - 1, y) ~= WALL_JOINED_Q
+				and self:get_wall_from_rooms(x, y, x - 1, y) ~= WALL_JOINED_Q
 				and self:get_wall_from_rooms(x, y, x - 1, y) ~= WALL_JOINED_H
 				and self:get_wall_from_rooms(x, y, x - 1, y) ~= WALL_JOINED_V
 				and self:get_wall_from_rooms(x, y, x + 1, y) ~= WALL_JOINED_Q
@@ -248,7 +248,7 @@ end
 function Dungeon:get_wall_from_rooms(room_1_x, room_1_y, room_2_x, room_2_y)
 	--do a couple sanity checks
 	assert(room_1_x ~= room_2_x or room_1_y ~= room_2_y, "given rooms are identical")
-	assert(math.abs(room_1_x - room_2_x) == 1 or math.abs(room_1_y - room_2_y) == 1, " given rooms are non-adjacent")	
+	assert(math.abs(room_1_x - room_2_x) == 1 or math.abs(room_1_y - room_2_y) == 1, " given rooms are non-adjacent")    
 	--NOTE: doors are associated with the room above or to the left of them.
 	--therefore, the upper-leftmost room of any adjacent pair will always be the one whose coords are the same as the door
 	local temp_x = math.min(room_1_x, room_2_x)
@@ -283,7 +283,7 @@ end
 function Dungeon:set_wall_from_rooms(value, room_1_x, room_1_y, room_2_x, room_2_y)
 	--everything in this method is the same as get_wall_from_rooms except assigning instead of returning
 	assert(room_1_x ~= room_2_x or room_1_y ~= room_2_y, "given rooms are identical")
-	assert(math.abs(room_1_x - room_2_x) == 1 or math.abs(room_1_y - room_2_y) == 1, " given rooms are non-adjacent")	
+	assert(math.abs(room_1_x - room_2_x) == 1 or math.abs(room_1_y - room_2_y) == 1, " given rooms are non-adjacent")    
 
 	local temp_x = math.min(room_1_x, room_2_x)
 	local temp_y = math.min(room_1_y, room_2_y)
