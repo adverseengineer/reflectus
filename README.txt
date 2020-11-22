@@ -16,7 +16,8 @@ Linux
 
 ====================================================================================================================
 Attribution
-wall.png is by Bart K at https://opengameart.org/content/brick-texture
-floor.png is by SindWiller at https://opengameart.org/content/pebblesstound-floor-texture
+all the minotaur sprites were created by AntumDeluge at https://opengameart.org/content/minotaur-2
+brick.png was originally created by Bart K at https://opengameart.org/content/brick-texture
+wall.png was originally created by SindWiller at https://opengameart.org/content/pebblesstound-floor-texture
 ambiance.ogg is by Philippe Groarke at https://opengameart.org/content/dark-ambiance
 All other assets are homemade

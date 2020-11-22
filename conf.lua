@@ -1,0 +1,6 @@
+title = "Reflectus"
+author = "Nick Sells"
+shortname = "reflectus"
+version = "1.0.0"
+support_email = "adverseengineer@gmail.com"
+copyright_message = "Copyright © 2020 Nick Sells"
