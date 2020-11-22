@@ -249,16 +249,17 @@ function Dungeon:get_wall_from_rooms(room_1_x, room_1_y, room_2_x, room_2_y)
 	--do a couple sanity checks
 	assert(room_1_x ~= room_2_x or room_1_y ~= room_2_y, "given rooms are identical")
 	assert(math.abs(room_1_x - room_2_x) == 1 or math.abs(room_1_y - room_2_y) == 1, " given rooms are non-adjacent")	
-
+	--NOTE: doors are associated with the room above or to the left of them.
+	--therefore, the upper-leftmost room of any adjacent pair will always be the one whose coords are the same as the door
+	local temp_x = math.min(room_1_x, room_2_x)
+	local temp_y = math.min(room_1_y, room_2_y)
 	--if we got through those two asserts, then the following logic should be bulletproof
 	--if the rooms are horizontally adjacent
 	if room_1_y == room_2_y then
-		--NOTE: doors are associated with the room above or to the left of them
-		--NTOE: therefore, the upper-leftmost room of any adjacent pair will always be the one whose coords are the same as the door
-		return self.h_wall_data[math.min(room_1_y, room_2_y)][math.min(room_1_x, room_2_x)]
-	--if the rooms are vertically adjacent
-	elseif room_1_x == room_2_x then
-		return self.v_wall_data[math.min(room_1_y, room_2_y)][math.min(room_1_x, room_2_x)]
+		return self:get_h_wall(temp_x, temp_y)
+	--else they must be vertically adjacent
+	else
+		return self:get_v_wall(temp_x, temp_y)
 	end
 end
 
@@ -280,19 +281,18 @@ end
 
 --sets the wall value between the specified rooms coords
 function Dungeon:set_wall_from_rooms(value, room_1_x, room_1_y, room_2_x, room_2_y)
-	--same as before, validate the coords given
+	--everything in this method is the same as get_wall_from_rooms except assigning instead of returning
 	assert(room_1_x ~= room_2_x or room_1_y ~= room_2_y, "given rooms are identical")
 	assert(math.abs(room_1_x - room_2_x) == 1 or math.abs(room_1_y - room_2_y) == 1, " given rooms are non-adjacent")	
 
-	--if we got through those two asserts, then the following logic should be bulletproof
+	local temp_x = math.min(room_1_x, room_2_x)
+	local temp_y = math.min(room_1_y, room_2_y)
 	--if the rooms are horizontally adjacent
 	if room_1_y == room_2_y then
-		--NOTE: doors are associated with the room above or to the left of them
-		--NTOE: therefore, the upper-leftmost room of any adjacent pair will always be the one whose coords are the same as the door
-		self.h_wall_data[math.min(room_1_y, room_2_y)][math.min(room_1_x, room_2_x)] = value
-	--if the rooms are vertically adjacent
-	elseif room_1_x == room_2_x then
-		self.v_wall_data[math.min(room_1_y, room_2_y)][math.min(room_1_x, room_2_x)] = value
+		self:set_h_wall(value, temp_x, temp_y)
+	--else they must be vertically adjacent
+	else
+		self:set_v_wall(value, temp_x, temp_y)
 	end
 end
 
@@ -328,10 +328,31 @@ function Dungeon:get_adjacent_cells(room_x, room_y)
 	return adjacent_cells
 end
 
---TODO: test
+--returns true if a quad room exists at the given coords
+function Dungeon:is_quad_room(room_x, room_y)
+
+	return self:get_room(room_x, room_y) > 0
+	and self:get_wall_from_rooms(room_x, room_y, room_x + 1, room_y) == WALL_JOINED_Q
+	and self:get_wall_from_rooms(room_x + 1, room_y, room_x + 1, room_y + 1) == WALL_JOINED_Q
+	and self:get_wall_from_rooms(room_x + 1, room_y + 1, room_x, room_y + 1) == WALL_JOINED_Q
+	and self:get_wall_from_rooms(room_x, room_y + 1, room_x, room_y) == WALL_JOINED_Q 
+end
+
+--returns true if a horizontal double room exists at the given coords
+function Dungeon:is_h_double_room(room_x, room_y)
+	return self:get_room(room_x, room_y) > 0
+	and self:get_wall_from_rooms(room_x, room_y, room_x + 1, room_y) == WALL_JOINED_H
+end
+
+--returns true if a vertical double room exists at the given coords
+function Dungeon:is_v_double_room(room_x, room_y)
+	return self:get_room(room_x, room_y) > 0 
+	and self:get_wall_from_rooms(room_x, room_y, room_x, room_y + 1) == WALL_JOINED_V
+end
+
 --returns a node for a top-down view of the dungeon
 --NOTE: this is the only code in this file that is not portable away from amulet. everything besides this function is pure lua
---NOTE: this function does not need to be efficient. it is only for verifying everything else works
+--NOTE: this function is not meant to be efficient. it is only for verifying everything else works
 function Dungeon:top_down(scale_factor, room_width, room_height, h_spacing, v_spacing)
 	--declare a node to store the view
 	-- the translate here is so that the view is centered
@@ -368,25 +389,18 @@ function Dungeon:top_down(scale_factor, room_width, room_height, h_spacing, v_sp
 	--quad room loop
 	for y = 1, #self.room_data do
 		for x = 1, #self.room_data[1] do
-			--if there is a room here
-			if self:get_room(x, y) > 0 then
-				--if it is a quad room
-				if self:get_wall_from_rooms(x, y, x + 1, y) == WALL_JOINED_Q
-				and self:get_wall_from_rooms(x + 1, y, x + 1, y + 1) == WALL_JOINED_Q
-				and self:get_wall_from_rooms(x + 1, y + 1, x, y + 1) == WALL_JOINED_Q
-				and self:get_wall_from_rooms(x, y + 1, x, y) == WALL_JOINED_Q then
-					log("quad @ ("..x..","..y..")")
-					--add it to the view
-					dungeon_view:append(
-						am.rect(
-							(x - 1) * (room_width + h_spacing),
-							(y - 1) * (room_height + v_spacing),
-							x * (room_width + h_spacing) + room_width,
-							y * (room_height + v_spacing) + room_height,
-							colors.red
-						)
+			--if there is a quad room here
+			if self:is_quad_room(x, y) then
+				--add it to the view
+				dungeon_view:append(
+					am.rect(
+						(x - 1) * (room_width + h_spacing),
+						(y - 1) * (room_height + v_spacing),
+						x * (room_width + h_spacing) + room_width,
+						y * (room_height + v_spacing) + room_height,
+						colors.red
 					)
-				end
+				)
 			end
 		end
 	end
@@ -394,20 +408,18 @@ function Dungeon:top_down(scale_factor, room_width, room_height, h_spacing, v_sp
 	--horizontal double room loop
 	for y = 1, #self.room_data do
 		for x = 1, #self.room_data[1] do
-			--if there is a room here
-			if self:get_room(x, y) > 0 then
-				if self:get_wall_from_rooms(x, y, x + 1, y) == WALL_JOINED_H then
-					--add it to the view
-					dungeon_view:append(
-						am.rect(
-							(x - 1) * (room_width + h_spacing),
-							(y - 1) * (room_height + v_spacing),
-							x * (room_width + h_spacing) + room_width,
-							(y - 1) * (room_height + v_spacing) + room_height,
-							colors.blue
-						)
+			--if there is a horizontal double room here
+			if self:is_h_double_room(x, y) then
+				--add it to the view
+				dungeon_view:append(
+					am.rect(
+						(x - 1) * (room_width + h_spacing),
+						(y - 1) * (room_height + v_spacing),
+						x * (room_width + h_spacing) + room_width,
+						(y - 1) * (room_height + v_spacing) + room_height,
+						colors.blue
 					)
-				end
+				)
 			end
 		end
 	end
@@ -415,20 +427,18 @@ function Dungeon:top_down(scale_factor, room_width, room_height, h_spacing, v_sp
 	--vertical double rooms
 	for y = 1, #self.room_data do
 		for x = 1, #self.room_data[1] do
-			--if there is a room here
-			if self:get_room(x, y) > 0 then
-				if self:get_wall_from_rooms(x, y, x, y + 1) == WALL_JOINED_V then
-					--add it to the view
-					dungeon_view:append(
-						am.rect(
-							(x - 1) * (room_width + h_spacing),
-							(y - 1) * (room_height + v_spacing),
-							(x - 1) * (room_width + h_spacing) + room_width,
-							y * (room_height + v_spacing) + room_height,
-							colors.yellow
-						)
+			--if there is a vertical double room here
+			if self:is_v_double_room(x, y) then
+				--add it to the view
+				dungeon_view:append(
+					am.rect(
+						(x - 1) * (room_width + h_spacing),
+						(y - 1) * (room_height + v_spacing),
+						(x - 1) * (room_width + h_spacing) + room_width,
+						y * (room_height + v_spacing) + room_height,
+						colors.yellow
 					)
-				end
+				)
 			end
 		end
 	end
@@ -480,89 +490,172 @@ end
 function Dungeon:get_data(room_width, room_height)
 	local data = {}
 
+	local corner_0 = " c0"
+	local corner_1 = " c1"
+	local corner_2 = " c2"
+	local corner_3 = " c3"
+	local wall_0 = " w0"
+	local wall_1 = " w1"
+	local wall_2 = " w2"
+	local wall_3 = " w3"
+	local floor = "  F"
+	local h_door = "  H"
+	local v_door = "  V"
+
 	--pre-allocate the return array
 	for y = 1, #self.room_data * (room_height + 1) do
 		data[y] = {}
 		for x = 1, #self.room_data[1] * (room_width + 1) do
-			data[y][x] = "  "
+			data[y][x] = "   "
 		end
 	end
 
-	--for every row of the room data
+	--label the rows and cols
+	for y = 1, #self.room_data * (room_height + 1) do
+		data[y][1] = string.format("%3s", y)
+	end
+	for x = 1, #self.room_data[1] * (room_width + 1) do
+		data[1][x] = string.format("%3s", x)
+	end
+
+	--NOTE: in order to avoid overcomplicating the code, the blocks that add single rooms must be in their own loops, otherwise they overlap everything else
+	--if we put it anywhere in the other set of loops it ends up overlapping other rooms.
 	for y = 1, #self.room_data do
 		for x = 1, #self.room_data[1] do
-			--if there is a room here
+			local temp_x = (x - 1) * (room_width + 1) + 1
+			local temp_y = (y - 1) * (room_height + 1) + 1
+			--if there is a room here at all
 			if self:get_room(x, y) > 0 then
-				--if it is a quad room
-				if self:get_wall_from_rooms(x, y, x + 1, y) == WALL_JOINED_Q
-				and self:get_wall_from_rooms(x + 1, y, x + 1, y + 1) == WALL_JOINED_Q
-				and self:get_wall_from_rooms(x + 1, y + 1, x, y + 1) == WALL_JOINED_Q
-				and self:get_wall_from_rooms(x, y + 1, x, y) == WALL_JOINED_Q then
-					--mark a square region of the return data as "room"
-					--NOTE: offset_x and offset_y are used as offsets, rather than indexes. they range from 0 to max - 1
-					--NOTE: in the case of joined rooms, the minus one is dropped to make room for the wall between them and the limit becomes max * 2
-					--TODO: change this so that it marks the edge with a distinct value from the middle
-					for offset_y = 0, room_height * 2 do
-						for offset_x = 0, room_width * 2 do
-							--NOTE: these temp vars are just for readability
-							--NOTE: if you're reading this and don't understand the logic behind the math, draw it on paper
-							local temp_x = (x - 1) * (room_width + 1) + offset_x + 1
-							local temp_y = (y - 1) * (room_height + 1) + offset_y + 1
-							log("room: ("..temp_x..","..temp_y..")")
-							data[temp_y][temp_x] = " #"
-						end
-					end
-				--else if it is a horizontal double room
-				elseif self:get_wall_from_rooms(x, y, x + 1, y) == WALL_JOINED_H then
-					--same as before, but this time loop for 2x,y
-					for offset_y = 0, room_height - 1 do
-						for offset_x = 0, room_width * 2 do
-							local temp_x = (x - 1) * (room_width + 1) + offset_x + 1
-							local temp_y = (y - 1) * (room_height + 1) + offset_y + 1
-							log("room: ("..temp_x..","..temp_y..")")
-							data[temp_y][temp_x] = " #"
-						end
-					end
-				--else if it is a vertical double room
-				elseif self:get_wall_from_rooms(x, y, x, y + 1) == WALL_JOINED_V then
-					--yet again, but loop for x, 2y
-					for offset_y = 0, room_height * 2 do
-						for offset_x = 0, room_width - 1 do
-							local temp_x = (x - 1) * (room_width + 1) + offset_x + 1
-							local temp_y = (y - 1) * (room_height + 1) + offset_y + 1
-							log("room: ("..temp_x..","..temp_y..")")
-							data[temp_y][temp_x] = " #"
-						end
-					end
-				--else if it is a single room
-				else
-					--loop for the regular size
-					for offset_y = 0, room_height - 1 do
-						for offset_x = 0, room_width - 1 do
-							local temp_x = (x - 1) * (room_width + 1) + offset_x + 1
-							local temp_y = (y - 1) * (room_height + 1) + offset_y + 1
-							log("room: ("..temp_x..","..temp_y..")")
-							data[temp_y][temp_x] = " #"
-						end
+				--draw the floor
+				for floor_y = 1, room_height - 2 do
+					for floor_x = 1, room_width - 2 do
+						data[temp_y + floor_y][temp_x + floor_x] = floor
 					end
 				end
+				--set the corners
+				data[temp_y][temp_x] = corner_0
+				data[temp_y][temp_x + room_width - 1] = corner_1
+				data[temp_y + room_height - 1][temp_x + room_width - 1] = corner_2
+				data[temp_y + room_height - 1][temp_x] = corner_3
+				--NOTE: it helps to think of the borders as two perpendicular pairs of parallel lines
+				--NOTE: to avoid wasted loop iterations, start the loop 1 later, and end 1 sooner
+				--set the north and south borders
+				for border_ns = temp_x + 1, temp_x + room_width - 2 do
+					data[temp_y][border_ns] = wall_0
+					data[temp_y + room_height - 1][border_ns] = wall_2
+				end
+				--set the east and west borders
+				for border_ew = temp_y + 1, temp_y + room_height - 2 do
+					data[border_ew][temp_x + room_width - 1] = wall_1
+					data[border_ew][temp_x] = wall_3
+				end
+			end
+		end
+	end
 
-				--now do the doors
-				--if there is a door on the right of this room
-				if self:get_wall_from_rooms(x, y, x + 1, y) == WALL_DOOR then
-					local temp_x = (x - 1) * (room_width + 1) + room_width + 1
-					local temp_y = (y - 1) * (room_height + 1) + 1 + 1
-					log("vdoor: ("..temp_x..","..temp_y..")")
-					data[temp_x][temp_y] = " X"
+	--for every cell in room_data
+	--add the special rooms
+	for y = 1, #self.room_data do
+		for x = 1, #self.room_data[1] do
+			--part of the math that determines the correct position is the same for every type of room, so store that here and add the different part later
+			local temp_x = (x - 1) * (room_width + 1) + 1
+			local temp_y = (y - 1) * (room_height + 1) + 1
+
+			--if there is a quad room here
+			if self:is_quad_room(x, y) then
+				--draw the floor
+				for floor_y = 1, room_height * 2 - 1 do
+					for floor_x = 1, room_width * 2 - 1 do
+						data[temp_y + floor_y][temp_x + floor_x] = floor
+					end
 				end
-				
-				--if there is a door along the bottom of this room
-				if self:get_wall_from_rooms(x, y, x, y + 1) == WALL_DOOR then
-					local temp_x = (x - 1) * (room_width + 1) + 1 + 1
-					local temp_y = (y - 1) * (room_height + 1) + room_height + 1
-					log("hdoor: ("..temp_x..","..temp_y..")")
-					data[temp_x][temp_y] = " D"
+				--set the corners
+				data[temp_y][temp_x] = corner_0
+				data[temp_y][temp_x + room_width * 2] = corner_1
+				data[temp_y + room_height * 2][temp_x + room_width * 2] = corner_2
+				data[temp_y + room_height * 2][temp_x] = corner_3
+				--set the north and south borders
+				for border_ns = temp_x + 1, temp_x + room_width * 2 - 1 do
+					data[temp_y][border_ns] = wall_0
+					data[temp_y + room_height * 2][border_ns] = wall_2
 				end
+				--set the east and west borders
+				for border_ew = temp_y + 1, temp_y + room_height * 2 do
+					data[border_ew][temp_x + room_width * 2] = wall_1
+					data[border_ew][temp_x] = wall_3
+				end
+			--else if it is a horizontal double room
+			elseif self:is_h_double_room(x, y) then
+				--draw the floor
+				for floor_y = 1, room_height - 2 do
+					for floor_x = 1, room_width * 2 - 1 do
+						data[temp_y + floor_y][temp_x + floor_x] = floor
+					end
+				end
+				--set the corners
+				data[temp_y][temp_x] = corner_0
+				data[temp_y][temp_x + room_width * 2] = corner_1
+				data[temp_y + room_height - 1][temp_x + room_width * 2] = corner_2
+				data[temp_y + room_height - 1][temp_x] = corner_3
+				--set the north and south borders
+				for border_ns = temp_x + 1, temp_x + room_width * 2 - 1 do
+					data[temp_y][border_ns] = wall_0
+					data[temp_y + room_height - 1][border_ns] = wall_2
+				end
+				--set the east and west borders
+				for border_ew = temp_y + 1, temp_y + room_height - 2 do
+					data[border_ew][temp_x + room_width * 2] = wall_1
+					data[border_ew][temp_x] = wall_3
+				end
+			--else if it is a vertical double room
+			elseif self:is_v_double_room(x, y) then
+				--draw the floor
+				for floor_y = 1, room_height * 2 - 1 do
+					for floor_x = 1, room_width - 2 do
+						data[temp_y + floor_y][temp_x + floor_x] = floor
+					end
+				end
+				--set the corners
+				data[temp_y][temp_x] = corner_0
+				data[temp_y][temp_x + room_width - 1] = corner_1
+				data[temp_y + room_height * 2][temp_x + room_width - 1] = corner_2
+				data[temp_y + room_height * 2][temp_x] = corner_3
+				--set the north and south borders
+				for border_ns = temp_x + 1, temp_x + room_width - 2 do
+					data[temp_y][border_ns] = wall_0
+					data[temp_y + room_height * 2][border_ns] = wall_2
+				end
+				--set the east and west borders
+				for border_ew = temp_y + 1, temp_y + room_height * 2 - 1 do
+					data[border_ew][temp_x + room_width - 1] = wall_1
+					data[border_ew][temp_x] = wall_3
+				end
+			end
+		end
+	end
+
+	--NOTE: the doors are special too. in order to not get the entryways overwritten, they have to be done in their own loops
+	--for every cell in room_data
+	for y = 1, #self.room_data do
+		for x = 1, #self.room_data[1] do
+			--part of the math that determines the correct position is the same for every type of room, so store that here and add the different part later
+			local temp_x = (x - 1) * (room_width + 1) + 1
+			local temp_y = (y - 1) * (room_height + 1) + 1
+
+			--if there is a door on the right of this room (horizontal)
+			if self:get_wall_from_rooms(x, y, x + 1, y) == WALL_DOOR then
+				--drop in a door and change the wall segs on either side of it to floor
+				data[temp_y + math.floor(room_height / 2)][temp_x + room_width] = h_door
+				data[temp_y + math.floor(room_height / 2)][temp_x + room_width - 1] = floor
+				data[temp_y + math.floor(room_height / 2)][temp_x + room_width + 1] = floor
+			end
+			
+			--if there is a door along the bottom of this room (vertical)
+			if self:get_wall_from_rooms(x, y, x, y + 1) == WALL_DOOR then
+				--drop in a door and change the wall segs on either side of it to floor
+				data[temp_y + room_height][temp_x + math.floor(room_width / 2)] = v_door
+				data[temp_y + room_height - 1][temp_x + math.floor(room_width / 2)] = floor
+				data[temp_y + room_height + 1][temp_x + math.floor(room_width / 2)] = floor
 			end
 		end
 	end
@@ -570,14 +663,25 @@ function Dungeon:get_data(room_width, room_height)
 	return data
 end
 
+--prints the ascii data that the level builder uses to place segments
+function Dungeon:print_all(room_width, room_height)
+	local data = self:get_data(room_width, room_height)
+	for y = 1, #data do
+		for x = 1, #data[1] do
+			io.write(data[y][x])
+		end
+		io.write("\n")
+	end
+end
+
 --prints out the contents of the room data
 function Dungeon:print_room_data()
 	for y = 1, #self.room_data do
-		for x = 1, #self.room_data[y] do
+		for x = 1, #self.room_data[1] do
 			if self:get_room(x, y) > 0 then
-				io.write(self:get_room(x, y).." ")
+				io.write(" "..self:get_room(x, y))
 			else
-				io.write(". ")
+				io.write(" .")
 			end
 		end
 		io.write("\n")
@@ -587,11 +691,11 @@ end
 --prints out the contents of the horizontal wall data
 function Dungeon:print_h_wall_data()
 	for y = 1, #self.h_wall_data do
-		for x = 1, #self.h_wall_data[y] do
+		for x = 1, #self.h_wall_data[1] do
 			if self:get_h_wall(x, y) > 0 then
-				io.write(self:get_h_wall(x, y).." ")
+				io.write(" "..self:get_h_wall(x, y))
 			else
-				io.write(". ")
+				io.write(" .")
 			end
 		end
 		io.write("\n")
@@ -601,11 +705,11 @@ end
 --prints out the contents of the vertical wall data
 function Dungeon:print_v_wall_data()
 	for y = 1, #self.v_wall_data do
-		for x = 1, #self.v_wall_data[y] do
+		for x = 1, #self.v_wall_data[1] do
 			if self:get_v_wall(x, y) > 0 then
-				io.write(self:get_v_wall(x, y).." ")
+				io.write(" "..self:get_v_wall(x, y))
 			else
-				io.write(". ")
+				io.write(" .")
 			end
 		end
 		io.write("\n")
