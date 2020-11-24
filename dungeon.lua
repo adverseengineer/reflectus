@@ -5,21 +5,21 @@ local WALL_JOINED_V = 2
 local WALL_JOINED_Q = 3
 local WALL_DOOR = 4
 
-local SEG_BLANK = 0
-local SEG_CORNER_0 = 1
-local SEG_CORNER_1 = 2
-local SEG_CORNER_2 = 3
-local SEG_CORNER_3 = 4
-local SEG_WALL_0 = 5
-local SEG_WALL_1 = 6
-local SEG_WALL_2 = 7
-local SEG_WALL_3 = 8
-local SEG_FLOOR = 9
-local SEG_H_DOOR = 10
-local SEG_V_DOOR = 11
+local SEG_BLANK = ""
+local SEG_CORNER_0 = "c0"
+local SEG_CORNER_1 = "c1"
+local SEG_CORNER_2 = "c2"
+local SEG_CORNER_3 = "c3"
+local SEG_WALL_0 = "w0"
+local SEG_WALL_1 = "w1"
+local SEG_WALL_2 = "w2"
+local SEG_WALL_3 = "w3"
+local SEG_FLOOR = "%f"
+local SEG_DOOR_H = "#h"
+local SEG_DOOR_V = "#v"
 
 require "colors"
-require "model"
+require "models"
 
 --just meta stuff that lua needs to emulate OOP
 Dungeon = {}
@@ -45,6 +45,17 @@ function Dungeon:new(map_width, map_height, num_iterations, quad_room_freq, h_do
 			result_dungeon.h_wall_data[y][x] = 0
 			result_dungeon.v_wall_data[y][x] = 0
 		end
+	end
+
+	--testing rooms to show the borders of the map. they'll never cause issues because the algorithm only claims unclaimed spaces
+	--NOTE: after testing, it looks like they do get claimed as part of joined rooms, but only because they fit the conditions. is fine either way
+	for x = 1, map_width - 1 do
+		result_dungeon.room_data[1][x] = 1
+		result_dungeon.room_data[map_height][x] = 1
+	end
+	for y = 1, map_height - 1 do
+		result_dungeon.room_data[y][1] = 1
+		result_dungeon.room_data[y][map_width] = 1
 	end
 
 	--set the center room and begin the generation
@@ -575,7 +586,8 @@ function Dungeon:get_data(room_width, room_height)
 					data[temp_y + room_height * 2][border_ns] = SEG_WALL_2
 				end
 				--set the east and west borders
-				for border_ew = temp_y + 1, temp_y + room_height * 2 do
+				--NOTE: i had to add a -2 to the max of this loop to make it work right, but im not sure why because the others didn't need it
+				for border_ew = temp_y + 1, temp_y + room_height * 2 - 2 do
 					data[border_ew][temp_x + room_width * 2] = SEG_WALL_1
 					data[border_ew][temp_x] = SEG_WALL_3
 				end
@@ -640,7 +652,7 @@ function Dungeon:get_data(room_width, room_height)
 			--if there is a door on the right of this room (horizontal)
 			if self:get_wall_from_rooms(x, y, x + 1, y) == WALL_DOOR then
 				--drop in a door and change the wall segs on either side of it to floor
-				data[temp_y + math.floor(room_height / 2)][temp_x + room_width] = SEG_H_DOOR
+				data[temp_y + math.floor(room_height / 2)][temp_x + room_width] = SEG_DOOR_H
 				data[temp_y + math.floor(room_height / 2)][temp_x + room_width - 1] = SEG_FLOOR
 				data[temp_y + math.floor(room_height / 2)][temp_x + room_width + 1] = SEG_FLOOR
 			end
@@ -648,7 +660,7 @@ function Dungeon:get_data(room_width, room_height)
 			--if there is a door along the bottom of this room (vertical)
 			if self:get_wall_from_rooms(x, y, x, y + 1) == WALL_DOOR then
 				--drop in a door and change the wall segs on either side of it to floor
-				data[temp_y + room_height][temp_x + math.floor(room_width / 2)] = SEG_V_DOOR
+				data[temp_y + room_height][temp_x + math.floor(room_width / 2)] = SEG_DOOR_V
 				data[temp_y + room_height - 1][temp_x + math.floor(room_width / 2)] = SEG_FLOOR
 				data[temp_y + room_height + 1][temp_x + math.floor(room_width / 2)] = SEG_FLOOR
 			end
@@ -664,91 +676,41 @@ function Dungeon:create_level(room_width, room_height)
 	assert(room_height >= 3, "given room height is too small")
 
 	local data = self:get_data(room_width, room_height)
-	local node = am.group()
+	local level = am.group()
 
+	--loop through all the map data and add the corresponding model node for each data value
 	for y = 1, #data do
 		for x = 1, #data[1] do
 			local position = am.translate(x, 0, y)
 
-			if data[y][x] == Dungeon.SEG_CORNER_0 then
-				node:append(
-					position
-					^ load_model("assets/seg_corner.obj", "assets/wall.png")
-				)
-				log("c0")
+			if data[y][x] == SEG_CORNER_0 then
+				level:append(position ^ models.seg_corner_0)
 			elseif data[y][x] == SEG_CORNER_1 then
-				node:append(
-					position
-					^ am.rotate(math.rad(90))
-					^ load_model("assets/seg_corner.obj", "assets/wall.png")
-				)
-				log("c1")
+				level:append(position ^ models.seg_corner_1)
 			elseif data[y][x] == SEG_CORNER_2 then
-				node:append(
-					position
-					^ am.rotate(math.rad(180))
-					^ load_model("assets/seg_corner.obj", "assets/wall.png")
-				)
-				log("c2")
+				level:append(position ^ models.seg_corner_2)
 			elseif data[y][x] == SEG_CORNER_3 then
-				node:append(
-					position
-					^ am.rotate(math.rad(270))
-					^ load_model("assets/seg_corner.obj", "assets/wall.png")
-				)
-				log("c3")
+				level:append(position ^ models.seg_corner_3)
 			elseif data[y][x] == SEG_WALL_0 then
-				node:append(
-					position
-					^ load_model("assets/seg_wall.obj", "assets/wall.png")
-				)
-				log("w0")
+				level:append(position ^ models.seg_wall_0)
 			elseif data[y][x] == SEG_WALL_1 then
-				node:append(
-					position
-					^ am.rotate(math.rad(90))
-					^ load_model("assets/seg_wall.obj", "assets/wall.png")
-				)
-				log("w1")
+				level:append(position ^ models.seg_wall_1)
 			elseif data[y][x] == SEG_WALL_2 then
-				node:append(
-					position
-					^ am.rotate(math.rad(180))
-					^ load_model("assets/seg_wall.obj", "assets/wall.png")
-				)
-				log("w2")
+				level:append(position ^ models.seg_wall_2)
 			elseif data[y][x] == SEG_WALL_3 then
-				node:append(
-					position
-					^ am.rotate(math.rad(270))
-					^ load_model("assets/seg_wall.obj", "assets/wall.png")
-				)
-				log("w3")
-			elseif data[y][x] == SEG_H_DOOR then
-				node:append(
-					position
-					^ load_model("assets/seg_door.obj", "assets/wall.png")
-				)
-				log("hd")
-			elseif data[y][x] == SEG_H_DOOR then
-				node:append(
-					position
-					^ load_model("assets/seg_door.obj", "assets/wall.png")
-				)
-				log("vd")
+				level:append(position ^ models.seg_wall_3)
+			elseif data[y][x] == SEG_DOOR_H then
+				level:append(position ^ models.seg_door_h)
+			elseif data[y][x] == SEG_DOOR_V then
+				level:append(position ^ models.seg_door_v)
 			elseif data[y][x] == SEG_FLOOR then
-				node:append(
-					position
-					^ load_model("assets/seg_floor.obj", "assets/wall.png")
-				)
-				log("floor")
+				level:append(position ^ models.seg_floor)
 			end
 		end
 	end
 
-	return node
+	return level
 end
-
 
 --prints the ascii data that the level builder uses to place segments
 function Dungeon:print_all(room_width, room_height)

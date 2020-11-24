@@ -8,7 +8,6 @@ keys =
 	down_alt = "down",
 	left_alt = "left",
 	right_alt = "right",
-
-	jump = "space",
-	exit = "escape"
+	quit = "escape",
+	toggle_fs = "f"
 }
