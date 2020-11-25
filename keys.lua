@@ -8,6 +8,8 @@ keys =
 	down_alt = "down",
 	left_alt = "left",
 	right_alt = "right",
-	quit = "escape",
-	toggle_fs = "f"
+	exit = "escape",
+	toggle_fullscreen = "f",
+	reflect = "r"
+
 }

@@ -14,6 +14,7 @@ local SEG_WALL_0 = "w0"
 local SEG_WALL_1 = "w1"
 local SEG_WALL_2 = "w2"
 local SEG_WALL_3 = "w3"
+local SEG_PILLAR = "$p"
 local SEG_FLOOR = "%f"
 local SEG_DOOR_H = "#h"
 local SEG_DOOR_V = "#v"
@@ -47,20 +48,23 @@ function Dungeon:new(map_width, map_height, num_iterations, quad_room_freq, h_do
 		end
 	end
 
-	--testing rooms to show the borders of the map. they'll never cause issues because the algorithm only claims unclaimed spaces
-	--NOTE: after testing, it looks like they do get claimed as part of joined rooms, but only because they fit the conditions. is fine either way
-	for x = 1, map_width - 1 do
-		result_dungeon.room_data[1][x] = 1
-		result_dungeon.room_data[map_height][x] = 1
-	end
-	for y = 1, map_height - 1 do
-		result_dungeon.room_data[y][1] = 1
-		result_dungeon.room_data[y][map_width] = 1
-	end
+	-- --testing rooms to show the borders of the map. they'll never cause issues because the algorithm only claims unclaimed spaces
+	-- --NOTE: after testing, it looks like they do get claimed as part of joined rooms, but only because they fit the conditions. is fine either way
+	-- for x = 1, map_width - 1 do
+	-- 	result_dungeon.room_data[1][x] = 1
+	-- 	result_dungeon.room_data[map_height][x] = 1
+	-- end
+	-- for y = 1, map_height - 1 do
+	-- 	result_dungeon.room_data[y][1] = 1
+	-- 	result_dungeon.room_data[y][map_width] = 1
+	-- end
+
+	local center_x = math.floor(map_width/ 2)
+	local center_y = math.floor(map_height / 2)
 
 	--set the center room and begin the generation
-	result_dungeon.room_data[math.ceil(map_height / 2)][math.ceil(map_width / 2)] = num_iterations
-	result_dungeon:generate_rooms(math.ceil(map_width / 2), math.ceil(map_height / 2), num_iterations, num_iterations)
+	result_dungeon.room_data[center_y][center_x] = num_iterations
+	result_dungeon:generate_rooms(center_x, center_y, num_iterations, num_iterations)
 
 	--spice up the dungeon
 	result_dungeon:make_quad_rooms(quad_room_freq)
@@ -575,6 +579,9 @@ function Dungeon:get_data(room_width, room_height)
 						data[temp_y + floor_y][temp_x + floor_x] = SEG_FLOOR
 					end
 				end
+				--put a pillar in the middle
+				--NOTE: not sure why, but in order to be placed right, i have to add 1 to each of the indexes
+				data[temp_y + math.floor((room_height * 2 - 1) / 2) + 1][temp_x + math.floor((room_width * 2 - 1) / 2) + 1] = SEG_PILLAR
 				--set the corners
 				data[temp_y][temp_x] = SEG_CORNER_0
 				data[temp_y][temp_x + room_width * 2] = SEG_CORNER_1
@@ -699,6 +706,8 @@ function Dungeon:create_level(room_width, room_height)
 				level:append(position ^ models.seg_wall_2)
 			elseif data[y][x] == SEG_WALL_3 then
 				level:append(position ^ models.seg_wall_3)
+			elseif data[y][x] == SEG_PILLAR then
+				level:append(position ^ models.seg_pillar)
 			elseif data[y][x] == SEG_DOOR_H then
 				level:append(position ^ models.seg_door_h)
 			elseif data[y][x] == SEG_DOOR_V then

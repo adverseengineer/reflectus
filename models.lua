@@ -47,7 +47,8 @@ models = {
 	seg_wall_1 = am.rotate(math.rad(270), vec3(0, 1, 0)) ^ load_model("assets/seg_wall.obj", "assets/texture.png", shaders.textured, colors.orange, vec3(0.2, 0.1, 0.3)),
 	seg_wall_2 = am.rotate(math.rad(180), vec3(0, 1, 0)) ^ load_model("assets/seg_wall.obj", "assets/texture.png", shaders.textured, colors.orange, vec3(0.2, 0.1, 0.3)),
 	seg_wall_3 = am.rotate(math.rad(90), vec3(0, 1, 0)) ^ load_model("assets/seg_wall.obj", "assets/texture.png", shaders.textured, colors.orange, vec3(0.2, 0.1, 0.3)),
-	seg_door_h = load_model("assets/seg_door.obj", "assets/texture.png", shaders.textured, colors.blue, vec3(0.2, 0.1, 0.3)),
-	seg_door_v = am.rotate(math.rad(90), vec3(0, 1, 0)) ^ load_model("assets/seg_door.obj", "assets/texture.png", shaders.textured, colors.blue, vec3(0.2, 0.1, 0.3)),
+	seg_pillar = load_model("assets/seg_pillar.obj", "assets/texture.png", shaders.textured, colors.yellow, vec3(0.2, 0.1, 0.3)),
+	seg_door_h = load_model("assets/seg_door.obj", "assets/texture.png", shaders.textured, colors.magenta, vec3(0.2, 0.1, 0.3)),
+	seg_door_v = am.rotate(math.rad(90), vec3(0, 1, 0)) ^ load_model("assets/seg_door.obj", "assets/texture.png", shaders.textured, colors.magenta, vec3(0.2, 0.1, 0.3)),
 	seg_floor = load_model("assets/seg_floor.obj", "assets/texture.png", shaders.textured, colors.orange, vec3(0.2, 0.1, 0.3))
 }
